@@ -50,6 +50,8 @@ function FiberNode(tag: WorkTag, pendingProps: unknown, key: null | string) {
   this.childLanes = NoLanes;
 
   this.alternate = null;
+
+  this.deletions = null;
 }
 
 // 根据type和props创建Fiber

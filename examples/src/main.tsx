@@ -37,13 +37,30 @@ function App2() {
   const [count, setCount] = useReducer((x) => x + 1, 0);
   return (
     <div className="app">
-      <button
+      {count % 2 === 0 ? (
+        <h1
+          onClick={() => {
+            setCount();
+          }}
+        >
+          123
+        </h1>
+      ) : (
+        <h2
+          onClick={() => {
+            setCount();
+          }}
+        >
+          456
+        </h2>
+      )}
+      {/* <button
         onClick={() => {
           setCount();
         }}
       >
         {count}
-      </button>
+      </button> */}
     </div>
   );
 }

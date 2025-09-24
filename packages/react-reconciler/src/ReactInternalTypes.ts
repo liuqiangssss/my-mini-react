@@ -50,6 +50,9 @@ export type Fiber = {
   alternate: Fiber | null;
 
   updateQueue: any;
+
+  // 当前fiber节点下，（下一层级）所有需要删除的子fiber节点
+  deletions: Fiber[] | null;
 };
 
 export type FiberRoot = {

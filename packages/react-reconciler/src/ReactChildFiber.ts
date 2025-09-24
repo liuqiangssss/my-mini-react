@@ -6,7 +6,7 @@ import {
   createFiberFromText,
   createWorkInProgress,
 } from "./ReactFiber";
-import { Placement } from "./ReactFiberFlags";
+import { ChildDeletion, Placement } from "./ReactFiberFlags";
 import { isArray } from "shared/utils";
 
 type ChildReconciler = (
@@ -23,6 +23,33 @@ export const mountChildFibers: ChildReconciler = createChildReconciler(false);
 function createChildReconciler(
   shouldTrackSideEffects: boolean
 ): ChildReconciler {
+  function deleteChild(returnFiber: Fiber, childToDelete: Fiber) {
+    if (!shouldTrackSideEffects) {
+      // 初次渲染阶段，不需要删除节点
+      return;
+    }
+    const deletions = returnFiber.deletions;
+    if (deletions === null) {
+      returnFiber.deletions = [childToDelete];
+      returnFiber.flags = ChildDeletion;
+    } else {
+      deletions.push(childToDelete);
+    }
+  }
+
+  function deleteRemainingChildren(returnFiber: Fiber, currentFirstChild: Fiber) {
+    if (!shouldTrackSideEffects) {
+        // 初次渲染阶段，不需要删除节点
+        return;
+      }
+    let childToDelete : Fiber | null = currentFirstChild;
+    while (childToDelete !== null) {
+      deleteChild(returnFiber, childToDelete);
+      childToDelete = childToDelete.sibling;
+    }
+    return null;
+  }
+
   // 给fiber节点， 添加 flags 标记， Placement 。。。
   function placeSingleChild(newFiber: Fiber): Fiber {
     // newFiber.alternate === null 表示这个一个全新的fiber节点， 这个节点需要插入到 DOM 中
@@ -51,6 +78,8 @@ function createChildReconciler(
   }
 
   // 协调单个子节点, single 指的是element
+  // new div.key = 1
+  // old p span.key = 1 a
   function reconcileSingleElement(
     returnFiber: Fiber,
     currentFirstChild: Fiber | null,
@@ -70,12 +99,18 @@ function createChildReconciler(
           return existing;
         } else {
           // react 不认为同一层级下，有两个相同的key
+          // key 相同，类型不同, 删除剩下全部节点
+          // 举例：new  div.key = 1
+          // old p  span.key = 1  a
+          deleteRemainingChildren(returnFiber, child);
           break;
         }
       } else {
         // todo
         // 删除单个节点
-        // deleteChild
+        // 举例  {    count ? <h1>123</h1> : <h2>456</h2>  }
+        // 将要删除的节点放到父dom节点的deletions数组中
+        deleteChild(returnFiber, child);
       }
       // 老节点是单链表
       child = child.sibling;
