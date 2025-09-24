@@ -1,0 +1,159 @@
+import { scheduleUpdateOnFiber } from "./ReactFiberWorkLoop";
+import type { Fiber, FiberRoot } from "./ReactInternalTypes";
+import { HostRoot } from "./ReactWorkTags";
+
+type Dispatch<A> = (action: A) => void;
+
+type Hook = {
+  memoizedState: any;
+  queue: any;
+  next: Hook | null;
+};
+
+export type Update<S, A> = {
+  action: A;
+  hasEagerState: boolean;
+  eagerState: S | null;
+  next: Update<S, A>;
+};
+
+export type UpdateQueue<S, A> = {
+  pending: Update<S, A> | null;
+  dispatch: Dispatch<A> | null;
+  lastRenderedReducer: ((S, A) => S) | null;
+  lastRenderedState: S | null;
+};
+
+// 当前正在工作的函数组件的fiber
+let currentlyRenderingFiber: Fiber | null = null;
+
+let workInProgressHook: Hook | null = null;
+
+let currentHook: Hook | null = null;
+
+export function renderWithHooks<Props>(
+  current: Fiber | null,
+  workInProgress: Fiber,
+  Component: any,
+  pendingProps: Props
+) {
+  currentlyRenderingFiber = workInProgress;
+
+  // 初始先置空
+  workInProgress.memoizedState = null;
+  let children = Component(pendingProps);
+
+  // 重置全局变量
+  finishRenderingHooks();
+  return children;
+}
+
+function finishRenderingHooks() {
+  currentlyRenderingFiber = null;
+  currentHook = null;
+  workInProgressHook = null;
+}
+
+// 1 返回当前useXXX 函数对应的hook
+// 构建hook链表
+function updateWorkInProgressHook(): Hook {
+  let hook: Hook;
+  const current = currentlyRenderingFiber?.alternate;
+  if (current) {
+    // update 阶段 复用原先hook}
+    currentlyRenderingFiber!.memoizedState = current.memoizedState;
+
+    if (workInProgressHook !== null) {
+      workInProgressHook = hook = workInProgressHook.next as Hook;
+      currentHook = currentHook!.next;
+    } else {
+      // 头节点
+      hook = workInProgressHook = currentlyRenderingFiber!.memoizedState;
+      currentHook = current.memoizedState;
+    }
+  } else {
+    // mount 阶段
+    currentHook = null;
+    hook = {
+      memoizedState: null,
+      queue: null,
+      next: null,
+    };
+    if (workInProgressHook) {
+      workInProgressHook = workInProgressHook.next = hook;
+    } else {
+      // hook 单链表的头节点
+      workInProgressHook = currentlyRenderingFiber!.memoizedState = hook;
+    }
+  }
+
+  return hook;
+}
+
+export function useReducer<S, I, A>(
+  reducer: (state: S, action: A) => S,
+  initialArg: I,
+  init?: (initialArg: I) => S
+) {
+  let initialState: S;
+  if (init !== undefined) {
+    initialState = init(initialArg);
+  } else {
+    initialState = initialArg as any;
+  }
+
+  // ! 1 构建hook 链表(mount 和 update 阶段)
+  let hook: Hook = updateWorkInProgressHook();
+
+  // ! 2. 区分函数组件是初次挂载还是更新
+  if (!currentlyRenderingFiber?.alternate) {
+    // mount
+    hook.memoizedState = initialState;
+  }
+
+  //   const queue: UpdateQueue<S, A> = {
+  //     pending: null,
+  //     dispatch: null,
+  //     lastRenderedReducer: reducer,
+  //     lastRenderedState: initialState,
+  //   };
+  //   hook.queue = queue; // 初始化hook的queue
+  // ! 3 dispatch
+  const dispatch: Dispatch<A> = dispatchReducerAction.bind(
+    null,
+    currentlyRenderingFiber!,
+    hook,
+    reducer as any
+  );
+
+  return [hook.memoizedState, dispatch];
+}
+
+function dispatchReducerAction<S, A>(
+  fiber: Fiber,
+  hook: Hook,
+  reducer: (state: S, action: A) => S,
+  action: A
+): void {
+  hook.memoizedState = reducer ? reducer(hook.memoizedState, action) : action;
+
+  const root: FiberRoot = getRootForUpdatedFiber(fiber) as FiberRoot;
+  fiber.alternate = {
+    ...fiber,
+  };
+
+  scheduleUpdateOnFiber(root, fiber);
+}
+
+// 根据 sourceFiber 找根节点
+function getRootForUpdatedFiber(sourceFiber: Fiber): FiberRoot | null {
+  let node = sourceFiber;
+  let parent = node.return;
+
+  while (parent !== null) {
+    node = parent;
+    parent = node.return;
+  }
+
+  return node.tag === HostRoot ? node.stateNode : null;
+}

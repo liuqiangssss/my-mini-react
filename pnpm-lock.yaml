@@ -12,11 +12,32 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4
 
-  packages/react: {}
+  packages/react:
+    dependencies:
+      react-reconciler:
+        specifier: workspace:*
+        version: link:../react-reconciler
+      shared:
+        specifier: workspace:*
+        version: link:../shared
 
-  packages/react-dom: {}
+  packages/react-dom:
+    dependencies:
+      react-reconciler:
+        specifier: workspace:*
+        version: link:../react-reconciler
+      shared:
+        specifier: workspace:*
+        version: link:../shared
 
-  packages/react-reconciler: {}
+  packages/react-reconciler:
+    dependencies:
+      scheduler:
+        specifier: workspace:*
+        version: link:../scheduler
+      shared:
+        specifier: workspace:*
+        version: link:../shared
 
   packages/scheduler:
     dependencies:

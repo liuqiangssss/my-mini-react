@@ -102,6 +102,8 @@ function scheduleCallback(
     newTask.sortIndex = expirationTime;
     push(taskQueue, newTask);
 
+    // Schedule a host callback if needed. if we're already performing work,
+    // wait until the next time we yield.
     if (!isHostCallbackScheduled && !isPerformingWork) {
       isHostCallbackScheduled = true;
       requestHostCallback();
@@ -176,7 +178,7 @@ function workLoop(initalTime: number): boolean {
   let currentTime = initalTime;
   advanceTimers(currentTime);
   currentTask = peek(taskQueue) as Task;
-  while (currentTask !== null) {
+  while (currentTask !== null) { 
     // 只有当任务还没过期 AND 需要让出控制权时，才中断执行。
     // 如果任务已经过期，即使时间片用完了，也不应该中断，因为这是一个紧急任务，需要立即执行完成
 
@@ -217,7 +219,7 @@ function workLoop(initalTime: number): boolean {
   if (currentTask !== null) {
     return true;
   } else {
-    //   // 如果当前任务为空，代表没有任务需要执行了,但是timeQueue可能有任务，继续倒计时
+    // 如果当前任务为空，代表没有任务需要执行了,但是timeQueue可能有任务，继续倒计时
     const firstTimer = peek(timerQueue) as Task;
     if (firstTimer !== null) {
       requestHostTimeout(handleTimeout, firstTimer.startTime - currentTime);

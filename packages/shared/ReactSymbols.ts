@@ -15,7 +15,7 @@
 
 // The Symbol used to tag the ReactElement-like types.
 // export const REACT_LEGACY_ELEMENT_TYPE: symbol = Symbol.for('react.element');
-export const REACT_ELEMENT_TYPE: symbol = Symbol.for('react.element');
+export const REACT_ELEMENT_TYPE: symbol = Symbol.for('react.transitional.element')
 
 export const REACT_PORTAL_TYPE: symbol = Symbol.for('react.portal');
 export const REACT_FRAGMENT_TYPE: symbol = Symbol.for('react.fragment');
