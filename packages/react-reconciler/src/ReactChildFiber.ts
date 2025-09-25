@@ -255,14 +255,22 @@ function createChildReconciler(
     return existingChildren;
   }
 
-  function updateFromMap(existingChildren: Map<string | number, Fiber>, returnFiber: Fiber, newIdx: number, newChild: any) {
+  function updateFromMap(
+    existingChildren: Map<string | number, Fiber>,
+    returnFiber: Fiber,
+    newIdx: number,
+    newChild: any
+  ) {
     if (isText(newChild)) {
       const matchedFiber = existingChildren.get(newIdx) || null;
       return updateTextNode(returnFiber, matchedFiber, newChild + "");
-    } else {
-        const matchedFiber = existingChildren.get(newChild.key === null ?newIdx : newChild.key) || null;
-        return updateElement(returnFiber, matchedFiber, newChild);
+    } else if (typeof newChild === "object" && newChild !== null) {
+      const matchedFiber =
+        existingChildren.get(newChild.key === null ? newIdx : newChild.key) ||
+        null;
+      return updateElement(returnFiber, matchedFiber, newChild);
     }
+    return null;
   }
 
   // 函数需要返回头节点，也是父fiber的第一个子fiber
@@ -363,28 +371,34 @@ function createChildReconciler(
     // new 4
     const existingChildren = mapRemainingChildren(oldFiber);
     for (; newIdx < newChildren.length; newIdx++) {
-        const newFiber =  updateFromMap(existingChildren, returnFiber, newIdx, newChildren[newIdx]);
-        if (newFiber !== null) {
-            // 节点复用过后，瘦身map
-            if (shouldTrackSideEffects) {
-                existingChildren.delete(newFiber.key === null ? newIdx : newFiber.key);
-            }
-            lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
-            if (previousNewFiber === null) {
-                resultFirstChild = newFiber;
-            } else {
-                previousNewFiber.sibling = newFiber;
-            }
-            previousNewFiber = newFiber;
+      const newFiber = updateFromMap(
+        existingChildren,
+        returnFiber,
+        newIdx,
+        newChildren[newIdx]
+      );
+      if (newFiber !== null) {
+        // 节点复用过后，瘦身map
+        if (shouldTrackSideEffects) {
+          existingChildren.delete(
+            newFiber.key === null ? newIdx : newFiber.key
+          );
         }
-       
+        lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
+        if (previousNewFiber === null) {
+          resultFirstChild = newFiber;
+        } else {
+          previousNewFiber.sibling = newFiber;
+        }
+        previousNewFiber = newFiber;
+      }
     }
 
     // ! 3.1 处理剩余的老节点
     if (shouldTrackSideEffects) {
-        existingChildren.forEach((child) => {
-            deleteChild(returnFiber, child);
-        });
+      existingChildren.forEach((child) => {
+        deleteChild(returnFiber, child);
+      });
     }
     return resultFirstChild;
   }

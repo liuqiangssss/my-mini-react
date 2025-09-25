@@ -52,6 +52,9 @@ function App2() {
           <li key={"li" + item}>{item}</li>
         ))}
       </ul>
+      {count % 2 === 0 ? <h1>123</h1> : null}
+      {count % 2 === 0 ? <h1>123</h1> : undefined}
+      {count % 2 === 0 && <h1>123</h1>}
     </div>
   );
 }
