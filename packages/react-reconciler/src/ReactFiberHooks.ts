@@ -1,3 +1,4 @@
+import { isFn } from "shared/utils";
 import { scheduleUpdateOnFiber } from "./ReactFiberWorkLoop";
 import type { Fiber, FiberRoot } from "./ReactInternalTypes";
 import { HostRoot } from "./ReactWorkTags";
@@ -91,7 +92,7 @@ function updateWorkInProgressHook(): Hook {
 }
 
 export function useReducer<S, I, A>(
-  reducer: (state: S, action: A) => S,
+  reducer: ((state: S, action: A) => S) | null,
   initialArg: I,
   init?: (initialArg: I) => S
 ) {
@@ -156,4 +157,12 @@ function getRootForUpdatedFiber(sourceFiber: Fiber): FiberRoot | null {
   }
 
   return node.tag === HostRoot ? node.stateNode : null;
+}
+
+// 源码中useState与useReducer对比
+// useState,如果state没有改变，不引起组件更新。useReducer不是如此。
+// reducer 代表state修改规则，useReducer比较方便复用这个规则
+export function useState<S>(initialState: S | (() => S)) {
+  const init = isFn(initialState) ? (initialState as any)() : initialState;
+  return useReducer(null, init);
 }
