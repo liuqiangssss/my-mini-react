@@ -36,7 +36,8 @@ let fragment = (
 function App2() {
   const [count, setCount] = useReducer((x) => x + 1, 0);
   // const arr = count % 2 === 0 ? [1, 2, 3] : [1, 2, 3, 4, 5];  一，二轮更新可以搞定
-  const arr = count % 2 === 0 ? [0, 1, 2, 3, 4] : [0, 1, 2, 4];
+  // const arr = count % 2 === 0 ? [0, 1, 2, 3, 4] : [0, 1, 2, 4];
+  const arr = count % 2 === 0 ? [0, 1, 2, 3, 4] : [3, 2, 0, 4, 1];
   return (
     <div className="app">
       <button

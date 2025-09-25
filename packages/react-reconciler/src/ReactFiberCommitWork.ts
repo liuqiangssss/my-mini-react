@@ -70,7 +70,7 @@ function commitPlacement(finishedWork: Fiber) {
   // 只有原生标签的fiber 需要插入到DOM中
   if (finishedWork.stateNode && isHost(finishedWork)) {
     // 有dom节点
-    const domNode = finishedWork.stateNode;
+    // const domNode = finishedWork.stateNode;
     // 找到domNode 的父dom节点对应的fiber
     const parentFiber = getHostParentFiber(finishedWork);
 
@@ -81,7 +81,14 @@ function commitPlacement(finishedWork: Fiber) {
       parentDom = parentDom.containerInfo;
     }
 
-    parentDom.appendChild(domNode);
+    // parentDom.appendChild(domNode);
+    // 遍历fiber，寻找finishedWork的兄弟节点，sibling有（dom节点，且是更新过的节点，且本轮不发生移动）
+    const before = getHostSibling(finishedWork);
+    // 举例
+    // old 3 2 0 4 1
+    // new 0 1 2 3 4
+    // 01 相对位置没有发生变化， 2 3 4 都有placement，2，3 4 的before都是 null
+    insertOrAppendPlacementNode(finishedWork, before, parentDom);
   } else {
     // Fragment
     let kid = finishedWork.child;
@@ -89,6 +96,49 @@ function commitPlacement(finishedWork: Fiber) {
       commitPlacement(kid);
       kid = kid.sibling;
     }
+  }
+}
+
+// 找一个有dom节点的稳定的兄弟节点
+function getHostSibling(fiber: Fiber) {
+  let node = fiber;
+  sibling: while (1) {
+    while (node.sibling === null) {
+      if (node.return === null || isHostParent(node.return)) {
+        return null;
+      }
+      node = node.return;
+    }
+    node = node.sibling;
+    while (!isHost(node)) {
+      // 不是原生标签,
+      // Placement 新增插入，移动
+      if (node.flags & Placement) {
+        continue sibling;
+      }
+      //函数组件找他的child
+      if (node.child === null) {
+        continue sibling;
+      } else {
+        node = node.child;
+      }
+    }
+    // 存在stateNode，是Host节点
+    if (!(node.flags & Placement)) {
+      return node.stateNode;
+    }
+  }
+}
+
+function insertOrAppendPlacementNode(
+  node: Fiber,
+  before: Element,
+  parent: Element
+) {
+  if (before) {
+    parent.insertBefore(getStateNode(node), before);
+  } else {
+    parent.appendChild(getStateNode(node));
   }
 }
 
