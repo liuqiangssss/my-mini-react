@@ -173,7 +173,8 @@ export function useMemo<T>(nextCreate: () => T, deps: any[]): T {
   const prevState = hook.memoizedState;
 
   // 更新时，检查依赖项是否发生变化
-  if (prevState !== null) { // 证明时更新阶段
+  if (prevState !== null) {
+    // 证明时更新阶段
     if (nextDeps !== null) {
       const prevDeps = prevState[1];
       if (areHookInputsEqual(prevDeps, nextDeps)) {
@@ -185,6 +186,23 @@ export function useMemo<T>(nextCreate: () => T, deps: any[]): T {
 
   hook.memoizedState = [nextValue, nextDeps]; // 挂载时
   return nextValue;
+}
+
+export function useCallback<T>(callback: T, deps: any[]): T {
+  const hook = updateWorkInProgressHook();
+  const nextDeps = deps === undefined ? null : deps;
+  const prevState = hook.memoizedState;
+  if (prevState !== null) {
+    // 证明是更新阶段
+    if (nextDeps !== null) {
+      const prevDeps = prevState[1];
+      if (areHookInputsEqual(prevDeps, nextDeps)) {
+        return prevState[0];
+      }
+    }
+  }
+  hook.memoizedState = [callback, nextDeps];
+  return callback;
 }
 
 // 判断依赖项是否发生变化
