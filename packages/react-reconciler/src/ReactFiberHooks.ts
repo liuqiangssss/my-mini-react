@@ -166,3 +166,41 @@ export function useState<S>(initialState: S | (() => S)) {
   const init = isFn(initialState) ? (initialState as any)() : initialState;
   return useReducer(null, init);
 }
+
+export function useMemo<T>(nextCreate: () => T, deps: any[]): T {
+  const hook = updateWorkInProgressHook();
+  const nextDeps = deps === undefined ? null : deps;
+  const prevState = hook.memoizedState;
+
+  // 更新时，检查依赖项是否发生变化
+  if (prevState !== null) { // 证明时更新阶段
+    if (nextDeps !== null) {
+      const prevDeps = prevState[1];
+      if (areHookInputsEqual(prevDeps, nextDeps)) {
+        return prevState[0];
+      }
+    }
+  }
+  const nextValue = nextCreate();
+
+  hook.memoizedState = [nextValue, nextDeps]; // 挂载时
+  return nextValue;
+}
+
+// 判断依赖项是否发生变化
+function areHookInputsEqual(
+  nextDeps: Array<any>,
+  prevDeps: Array<any> | null
+): boolean {
+  if (prevDeps === null) {
+    return false;
+  }
+
+  for (let i = 0; i < prevDeps.length && i < nextDeps.length; i++) {
+    if (Object.is(nextDeps[i], prevDeps[i])) {
+      continue;
+    }
+    return false;
+  }
+  return true;
+}

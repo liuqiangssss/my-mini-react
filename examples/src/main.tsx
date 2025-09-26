@@ -1,5 +1,16 @@
-// import { StrictMode } from 'react'
-import { ReactDOM, Fragment, Component, useReducer } from "../which-react";
+// import { ReactDOM } from 'react'
+import {
+  ReactDOM,
+  Fragment,
+  Component,
+  useReducer,
+  useMemo,
+  useState,
+} from "../which-react";
+const { createRoot } = ReactDOM;
+
+// import { Fragment, Component, useReducer, useMemo, useState } from "react";
+// import { createRoot } from "react-dom/client";
 import "./index.css";
 // import App from './App.tsx'
 
@@ -37,9 +48,16 @@ function App2() {
   const [count, setCount] = useReducer((x) => x + 1, 0);
   // const arr = count % 2 === 0 ? [1, 2, 3] : [1, 2, 3, 4, 5];  一，二轮更新可以搞定
   // const arr = count % 2 === 0 ? [0, 1, 2, 3, 4] : [0, 1, 2, 4];
-  const arr = count % 2 === 0 ? [0, 1, 2, 3, 4] : [3, 2, 0, 4, 1];
+  // const arr = count % 2 === 0 ? [0, 1, 2, 3, 4] : [3, 2, 0, 4, 1];
+  const [count2, setCount2] = useState(0);
+  const value = useMemo(() => {
+    console.log("useMemo");
+    return count2 + 100;
+  }, [count2]);
+
   return (
     <div className="app">
+      <p>111: {value}</p>
       <button
         onClick={() => {
           setCount();
@@ -47,14 +65,21 @@ function App2() {
       >
         {count}
       </button>
-      <ul>
+      <button
+        onClick={() => {
+          setCount2(count2 + 1);
+        }}
+      >
+        {count2}
+      </button>
+      {/* <ul>
         {arr.map((item) => (
           <li key={"li" + item}>{item}</li>
         ))}
       </ul>
       {count % 2 === 0 ? <h1>123</h1> : null}
       {count % 2 === 0 ? <h1>123</h1> : undefined}
-      {count % 2 === 0 && <h1>123</h1>}
+      {count % 2 === 0 && <h1>123</h1>} */}
     </div>
   );
 }
@@ -68,4 +93,4 @@ const JSX = (
   </div>
 ) as any;
 
-ReactDOM.createRoot(document.getElementById("root")!).render(<App2 />);
+createRoot(document.getElementById("root")!).render(<App2 />);
