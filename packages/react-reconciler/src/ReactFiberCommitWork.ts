@@ -1,9 +1,33 @@
 import { isHost } from "./ReactFiberCompleteWork";
-import { ChildDeletion, Placement } from "./ReactFiberFlags";
+import { ChildDeletion, Placement, Update } from "./ReactFiberFlags";
 import type { Fiber, FiberRoot } from "./ReactInternalTypes";
 import { HostComponent, HostRoot, HostText } from "./ReactWorkTags";
 
 export function commitMutationEffects(root: FiberRoot, finishedWork: Fiber) {
+
+  const flags = finishedWork.flags;
+  const current = finishedWork.alternate;
+
+  switch (finishedWork.tag) {
+    case HostText:
+      if (flags & Update) {
+        if (finishedWork.stateNode === null) {
+          throw new Error(
+            "This should have a text node initialized. This error is likely " +
+              "caused by a bug in React. Please file an issue."
+          );
+        }
+
+        const newText: string = finishedWork.memoizedProps;
+        // For hydration we reuse the update path but we treat the oldProps
+        // as the newProps. The updatePayload will contain the real change in
+        // this case.
+        const oldText: string =
+          current !== null ? current.memoizedProps : newText;
+        commitHostTextUpdate(finishedWork, newText, oldText);
+      }
+      break;
+  }
   // !1. 遍历fiber树， 处理副作用
   recursivelyTraverseMutationEffects(root, finishedWork);
   commitReconciliationEffects(finishedWork);
@@ -161,3 +185,20 @@ function getHostParentFiber(finishedWork: Fiber) {
 function isHostParent(fiber: Fiber): boolean {
   return fiber.tag === HostComponent || fiber.tag === HostRoot;
 }
+
+function commitHostTextUpdate(
+  finishedWork: Fiber,
+  newText: string,
+  oldText: string
+) {
+    const textInstance = finishedWork.stateNode;
+    commitTextUpdate(textInstance, oldText, newText);
+}
+
+export function commitTextUpdate(
+    textInstance: Text,
+    oldText: string,
+    newText: string,
+  ): void {
+    textInstance.nodeValue = newText;
+  }

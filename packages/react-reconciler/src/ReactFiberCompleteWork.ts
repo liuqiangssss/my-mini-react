@@ -1,3 +1,4 @@
+import { Update } from "./ReactFiberFlags";
 import type { Fiber } from "./ReactInternalTypes";
 import {
   ClassComponent,
@@ -20,7 +21,22 @@ export function completeWork(current: Fiber | null, workInProgress: Fiber) {
     case FunctionComponent:
       return null;
     case HostText: {
-      workInProgress.stateNode = document.createTextNode(newProps);
+      const newText = newProps;
+      if (current && workInProgress.stateNode != null) {
+        const oldText = current.memoizedProps;
+        updateHostText(current, workInProgress, oldText, newText);
+      } else {
+        if (typeof newText !== "string") {
+          if (workInProgress.stateNode === null) {
+            throw new Error(
+              "We must have new props for new mounts. This error is likely " +
+                "caused by a bug in React. Please file an issue."
+            );
+          }
+          // This can happen when we abort work.
+        }
+        workInProgress.stateNode = document.createTextNode(newProps);
+      }
       return null;
     }
     case HostComponent: {
@@ -50,6 +66,19 @@ export function completeWork(current: Fiber | null, workInProgress: Fiber) {
     `Unknown unit of work tag (${workInProgress.tag}). This error is likely caused by a bug in ` +
       "React. Please file an issue."
   );
+}
+
+function updateHostText(
+  current: Fiber,
+  workInProgress: Fiber,
+  oldText: string,
+  newText: string
+) {
+  // If the text differs, mark it as an update. All the work in done in commitWork.
+  if (oldText !== newText) {
+    markUpdate(workInProgress);
+  }
+  workInProgress.stateNode = current.stateNode;
 }
 
 function updateHostComponent(
@@ -156,4 +185,9 @@ function appendAllChildren(parent: Element, workInProgress: Fiber) {
 // nodeFiber.stateNode 是dom节点
 export function isHost(fiber: Fiber) {
   return fiber.tag === HostComponent || fiber.tag === HostText;
+}
+
+// 标记更新
+function markUpdate(workInProgress: Fiber) {
+  workInProgress.flags |= Update;
 }
