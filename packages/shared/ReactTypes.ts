@@ -26,3 +26,16 @@ export type Source = {
   
   export type ReactText = string | number;
   
+  export type ReactContext<T> = {
+    $$typeof: symbol | number;
+    _currentValue: T;
+  
+    Provider: ReactProviderType<T>;
+    Consumer: ReactContext<T>;
+  };
+  
+  export type ReactProviderType<T> = {
+    $$typeof: symbol | number;
+    _context: ReactContext<T>;
+  };
+  

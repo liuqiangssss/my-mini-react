@@ -2,6 +2,7 @@ import { Update } from "./ReactFiberFlags";
 import type { Fiber } from "./ReactInternalTypes";
 import {
   ClassComponent,
+  ContextProvider,
   Fragment,
   FunctionComponent,
   HostComponent,
@@ -9,6 +10,7 @@ import {
   HostText,
 } from "./ReactWorkTags";
 import { isNum, isStr } from "shared/utils";
+import { popProvider } from "./ReactFiberNewContext";
 
 // 完成工作， 创建dom节点
 export function completeWork(current: Fiber | null, workInProgress: Fiber) {
@@ -19,6 +21,9 @@ export function completeWork(current: Fiber | null, workInProgress: Fiber) {
     case ClassComponent:
     case Fragment:
     case FunctionComponent:
+      return null;
+    case ContextProvider:
+      popProvider(workInProgress.type._context);
       return null;
     case HostText: {
       const newText = newProps;

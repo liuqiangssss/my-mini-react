@@ -3,11 +3,8 @@ import { scheduleUpdateOnFiber } from "./ReactFiberWorkLoop";
 import type { Fiber, FiberRoot } from "./ReactInternalTypes";
 import { HostRoot } from "./ReactWorkTags";
 import { Passive, Update, type Flags } from "./ReactFiberFlags";
-import {
-  type HookFlags,
-  HookLayout,
-  HookPassive,
-} from "./ReactHookEffectTags";
+import { type HookFlags, HookLayout, HookPassive } from "./ReactHookEffectTags";
+import { readContext } from "./ReactFiberNewContext";
 
 type Dispatch<A> = (action: A) => void;
 
@@ -233,6 +230,10 @@ export function useRef<T>(initialValue: T) {
   return hook.memoizedState;
 }
 
+export function useContext(context) {
+  return readContext(context);
+}
+
 // useEffect与useLayoutEffect的区别
 // 存储结构一样
 // effect和destroy函数的执行时机不同
@@ -273,12 +274,7 @@ function updateEffectImpl(
 
   // * 保存effect
   // * 构建effect链表
-  hook.memoizedState = pushEffectImpl(
-     hookFlags,
-    inst,
-    create,
-    nextDeps
-  );
+  hook.memoizedState = pushEffectImpl(hookFlags, inst, create, nextDeps);
 }
 
 function pushEffectImpl(

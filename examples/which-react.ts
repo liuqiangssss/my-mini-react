@@ -18,6 +18,8 @@ export {
   useRef,
   useEffect,
   useLayoutEffect,
+  useContext,
+  createContext,
 } from "../packages/react/src";
 
 export * as ReactDOM from "../packages/react-dom/client";

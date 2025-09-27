@@ -9,6 +9,8 @@ import {
   useRef,
   useLayoutEffect,
   useEffect,
+  createContext,
+  useContext,
 } from "../which-react";
 const { createRoot } = ReactDOM;
 
@@ -46,7 +48,7 @@ let fragment = (
 //     );
 //   }
 // }
-
+const CountContext = createContext(1000);
 function App2() {
   const [count, setCount] = useState(0);
   // const arr = count % 2 === 0 ? [1, 2, 3] : [1, 2, 3, 4, 5];  一，二轮更新可以搞定
@@ -80,6 +82,11 @@ function App2() {
       >
         {count2}
       </button>
+      <CountContext.Provider value={count}>
+        <CountContext.Provider value={count + 20}>
+          <Child />
+        </CountContext.Provider>
+      </CountContext.Provider>
       {/* <ul>
         {arr.map((item) => (
           <li key={"li" + item}>{item}</li>
@@ -91,14 +98,11 @@ function App2() {
     </div>
   );
 }
-const JSX = (
-  <div className="app">
-    {/* {fragment}   */}
-    {/* <h1 className="title">Hello </h1>
-    123
-    <h1 className="title"> World</h1>
-    dwdwdwd */}
-  </div>
-) as any;
+
+function Child() {
+  //! 后代组件消费value， 寻找最近的匹配的provider组件的value
+  const context = useContext(CountContext);
+  return <div>Child: {context}</div>;
+}
 
 createRoot(document.getElementById("root")!).render(<App2 />);

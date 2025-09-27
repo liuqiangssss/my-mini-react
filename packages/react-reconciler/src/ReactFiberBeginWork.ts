@@ -1,6 +1,7 @@
 import type { Fiber } from "./ReactInternalTypes";
 import {
   ClassComponent,
+  ContextProvider,
   Fragment,
   FunctionComponent,
   HostComponent,
@@ -10,7 +11,7 @@ import {
 import { reconcileChildFibers, mountChildFibers } from "./ReactChildFiber";
 import { isNum, isStr } from "shared/utils";
 import { renderWithHooks } from "./ReactFiberHooks";
-
+import { pushProvider } from "./ReactFiberNewContext";
 // 1 处理当前fiber， 应为不同组件对应的fiber 的处理方式不同
 // 2 返回子节点
 export function beginWork(
@@ -30,6 +31,10 @@ export function beginWork(
       return updateFragment(current, workInProgress);
     case FunctionComponent:
       return updateFunctionComponent(current, workInProgress);
+    case ContextProvider:
+      return updateContextProvider(current, workInProgress);
+    // case ContextConsumer:
+    //   return updateContextConsumer(current, workInProgress);
   }
 
   throw new Error(
@@ -101,6 +106,22 @@ function updateFunctionComponent(current: Fiber | null, workInProgress: Fiber) {
     type,
     pendingProps
   );
+  reconcileChildren(current, workInProgress, nextChildren);
+  return workInProgress.child;
+}
+
+function updateContextProvider(current: Fiber | null, workInProgress: Fiber) {
+  const { type, pendingProps } = workInProgress;
+
+  // todo 记录下context value， 方便让后代组件消费
+  // * 数据结构，栈
+  // ! begin阶段 push ，complete阶段 pop
+
+  const context = type._context;
+  const value = pendingProps.value;
+  pushProvider(context, value); 
+
+  const nextChildren = pendingProps.children;
   reconcileChildren(current, workInProgress, nextChildren);
   return workInProgress.child;
 }
