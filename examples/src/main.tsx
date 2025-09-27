@@ -6,6 +6,9 @@ import {
   useReducer,
   useMemo,
   useState,
+  useRef,
+  useLayoutEffect,
+  useEffect,
 } from "../which-react";
 const { createRoot } = ReactDOM;
 
@@ -50,17 +53,28 @@ function App2() {
   // const arr = count % 2 === 0 ? [0, 1, 2, 3, 4] : [0, 1, 2, 4];
   // const arr = count % 2 === 0 ? [0, 1, 2, 3, 4] : [3, 2, 0, 4, 1];
   const [count2, setCount2] = useState(0);
-  const value = useMemo(() => {
-    console.log("useMemo");
-    return count2 + 100;
-  }, [count2]);
+  const ref = useRef(0);
+    const value = useMemo(() => {
+      console.log("useMemo");
+      return count2 + 100;
+    }, [count2]);
+
+    useLayoutEffect(() => {
+      console.log("useLayoutEffect");
+    }, [count]);
+
+    useEffect(() => {
+      console.log("useEffect");
+    }, [count2]);
 
   return (
     <div className="app">
       <p>111: {value}</p>
       <button
         onClick={() => {
-          setCount();
+          setCount(count + 1);
+          // ref.current = ref.current + 1;
+          // alert(ref.current);
         }}
       >
         {count}

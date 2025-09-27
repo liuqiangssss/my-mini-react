@@ -49,6 +49,7 @@ export type Fiber = {
   // 上一次渲染的fiber
   alternate: Fiber | null;
 
+  // 记录effect
   updateQueue: any;
 
   // 当前fiber节点下，（下一层级）所有需要删除的子fiber节点

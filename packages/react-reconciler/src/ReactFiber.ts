@@ -132,6 +132,7 @@ export function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
   workInProgress.memoizedProps = current.memoizedProps;
   workInProgress.sibling = current.sibling;
   workInProgress.index = current.index;
+  workInProgress.updateQueue = current.updateQueue;
 
   return workInProgress;
 }

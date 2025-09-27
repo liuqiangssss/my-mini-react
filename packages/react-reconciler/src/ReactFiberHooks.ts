@@ -2,13 +2,33 @@ import { isFn } from "shared/utils";
 import { scheduleUpdateOnFiber } from "./ReactFiberWorkLoop";
 import type { Fiber, FiberRoot } from "./ReactInternalTypes";
 import { HostRoot } from "./ReactWorkTags";
+import { Passive, Update, type Flags } from "./ReactFiberFlags";
+import {
+  type HookFlags,
+  HasEffect as HookHasEffect,
+  HookLayout,
+  HookPassive,
+} from "./ReactHookEffectTags";
 
 type Dispatch<A> = (action: A) => void;
+
+type EffectInstance = {
+  destroy: void | (() => void);
+};
 
 type Hook = {
   memoizedState: any;
   queue: any;
   next: Hook | null;
+};
+
+// effect 类型
+export type Effect = {
+  tag: HookFlags;
+  inst: EffectInstance;
+  create: () => (() => void) | void;
+  deps: any[] | void | null;
+  next: Effect | null;
 };
 
 export type Update<S, A> = {
@@ -39,9 +59,9 @@ export function renderWithHooks<Props>(
   pendingProps: Props
 ) {
   currentlyRenderingFiber = workInProgress;
-
   // 初始先置空
   workInProgress.memoizedState = null;
+  workInProgress.updateQueue = null;
   let children = Component(pendingProps);
 
   // 重置全局变量
@@ -203,6 +223,99 @@ export function useCallback<T>(callback: T, deps: any[]): T {
   }
   hook.memoizedState = [callback, nextDeps];
   return callback;
+}
+
+export function useRef<T>(initialValue: T) {
+  const hook = updateWorkInProgressHook();
+  if (currentHook === null) {
+    // useRef 只在初次挂载时初始化
+    hook.memoizedState = { current: initialValue };
+  }
+  return hook.memoizedState;
+}
+
+// useEffect与useLayoutEffect的区别
+// 存储结构一样
+// effect和destroy函数的执行时机不同
+export function useLayoutEffect(
+  create: () => (() => void) | void,
+  deps: any[]
+) {
+  return updateEffectImpl(Update, HookLayout, create, deps);
+}
+
+// 依赖项变更后异步执行，layout依赖项变更后，同步执行
+export function useEffect(create: () => (() => void) | void, deps: any[]) {
+  return updateEffectImpl(Passive, HookPassive, create, deps);
+}
+
+function updateEffectImpl(
+  fiberFlags: Flags,
+  hookFlags: HookFlags,
+  create: () => (() => void) | void,
+  deps: any[]
+) {
+  const hook = updateWorkInProgressHook();
+  const nextDeps = deps === undefined ? null : deps;
+  const effect: Effect = hook.memoizedState;
+  const inst = effect ? effect.inst : { destroy: undefined };
+
+  if (currentHook !== null) {
+    if (nextDeps !== null) {
+      const prevEffect: Effect = currentHook.memoizedState;
+      const prevDeps = prevEffect.deps as any[];
+      if (areHookInputsEqual(nextDeps, prevDeps)) {
+        hook.memoizedState = pushEffectImpl(hookFlags, inst, create, nextDeps);
+        return;
+      }
+    }
+  }
+
+  currentlyRenderingFiber!.flags |= fiberFlags;
+
+  // * 保存effect
+  // * 构建effect链表
+  hook.memoizedState = pushEffectImpl(
+    HookHasEffect | hookFlags,
+    inst,
+    create,
+    nextDeps
+  );
+}
+
+function pushEffectImpl(
+  hookFlags: HookFlags,
+  inst: EffectInstance,
+  create: () => (() => void) | void,
+  nextDeps: any[] | null
+) {
+  const effect: Effect = {
+    tag: hookFlags,
+    inst,
+    create,
+    deps: nextDeps,
+    next: null,
+  };
+  let componentUpdateQueue = currentlyRenderingFiber?.updateQueue;
+  // 源码是单向循环链表
+  if (componentUpdateQueue === null) {
+    // 第一个effect
+    componentUpdateQueue = {
+      lastEffect: null,
+    };
+    currentlyRenderingFiber!.updateQueue = componentUpdateQueue;
+
+    componentUpdateQueue.lastEffect = effect.next = effect;
+  } else {
+    const lastEffect = componentUpdateQueue.lastEffect;
+    const firstEffect = lastEffect.next;
+    // 构建循环链表
+    lastEffect.next = effect;
+    effect.next = firstEffect;
+    componentUpdateQueue.lastEffect = effect;
+  }
+
+  return effect;
 }
 
 // 判断依赖项是否发生变化
