@@ -48,28 +48,22 @@ let fragment = (
 // }
 
 function App2() {
-  const [count, setCount] = useReducer((x) => x + 1, 0);
+  const [count, setCount] = useState(0);
   // const arr = count % 2 === 0 ? [1, 2, 3] : [1, 2, 3, 4, 5];  一，二轮更新可以搞定
   // const arr = count % 2 === 0 ? [0, 1, 2, 3, 4] : [0, 1, 2, 4];
   // const arr = count % 2 === 0 ? [0, 1, 2, 3, 4] : [3, 2, 0, 4, 1];
   const [count2, setCount2] = useState(0);
-  const ref = useRef(0);
-    const value = useMemo(() => {
-      console.log("useMemo");
-      return count2 + 100;
-    }, [count2]);
 
-    useLayoutEffect(() => {
-      console.log("useLayoutEffect");
-    }, [count]);
+  useLayoutEffect(() => {
+    console.log("useLayoutEffect");
+  }, [count]);
 
-    useEffect(() => {
-      console.log("useEffect");
-    }, [count2]);
+  useEffect(() => {
+    console.log("useEffect");
+  }, [count2]);
 
   return (
     <div className="app">
-      <p>111: {value}</p>
       <button
         onClick={() => {
           setCount(count + 1);

@@ -5,7 +5,6 @@ import { HostRoot } from "./ReactWorkTags";
 import { Passive, Update, type Flags } from "./ReactFiberFlags";
 import {
   type HookFlags,
-  HasEffect as HookHasEffect,
   HookLayout,
   HookPassive,
 } from "./ReactHookEffectTags";
@@ -265,7 +264,6 @@ function updateEffectImpl(
       const prevEffect: Effect = currentHook.memoizedState;
       const prevDeps = prevEffect.deps as any[];
       if (areHookInputsEqual(nextDeps, prevDeps)) {
-        hook.memoizedState = pushEffectImpl(hookFlags, inst, create, nextDeps);
         return;
       }
     }
@@ -276,7 +274,7 @@ function updateEffectImpl(
   // * 保存effect
   // * 构建effect链表
   hook.memoizedState = pushEffectImpl(
-    HookHasEffect | hookFlags,
+     hookFlags,
     inst,
     create,
     nextDeps

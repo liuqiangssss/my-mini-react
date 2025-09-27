@@ -12,7 +12,7 @@ export type HookFlags = number;
 export const NoFlags = /*   */ 0b0000;
 
 // Represents whether effect should fire.
-export const HasEffect = /* */ 0b0001;
+// export const HookHasEffect = /* */ 0b0001;
 
 // Represents the phase in which the effect (not the clean-up) fires.
 export const HookInsertion = /* */ 0b0010;

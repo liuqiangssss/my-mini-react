@@ -1,14 +1,35 @@
 import { isHost } from "./ReactFiberCompleteWork";
-import { ChildDeletion, Placement, Update } from "./ReactFiberFlags";
+import { ChildDeletion, Passive, Placement, Update } from "./ReactFiberFlags";
+import {
+  HookInsertion,
+  HookLayout,
+  HookPassive,
+  type HookFlags,
+} from "./ReactHookEffectTags";
 import type { Fiber, FiberRoot } from "./ReactInternalTypes";
-import { HostComponent, HostRoot, HostText } from "./ReactWorkTags";
+import {
+  FunctionComponent,
+  HostComponent,
+  HostRoot,
+  HostText,
+} from "./ReactWorkTags";
 
 export function commitMutationEffects(root: FiberRoot, finishedWork: Fiber) {
-
   const flags = finishedWork.flags;
   const current = finishedWork.alternate;
 
+  // !1. 遍历fiber树， 处理副作用
+  recursivelyTraverseMutationEffects(root, finishedWork);
+  commitReconciliationEffects(finishedWork);
+
   switch (finishedWork.tag) {
+    case FunctionComponent:
+      if (flags & Update) {
+        // 执行layoutEffect
+        commitHookEffectListMount(HookLayout, finishedWork);
+        finishedWork.flags &= ~Update;
+      }
+      break;
     case HostText:
       if (flags & Update) {
         if (finishedWork.stateNode === null) {
@@ -28,9 +49,6 @@ export function commitMutationEffects(root: FiberRoot, finishedWork: Fiber) {
       }
       break;
   }
-  // !1. 遍历fiber树， 处理副作用
-  recursivelyTraverseMutationEffects(root, finishedWork);
-  commitReconciliationEffects(finishedWork);
 }
 
 function recursivelyTraverseMutationEffects(
@@ -66,6 +84,25 @@ function commitReconciliationEffects(finishedWork: Fiber) {
   }
 }
 
+// 执行layoutEffect
+function commitHookEffectListMount(flags: HookFlags, finishedWork: Fiber) {
+  const updateQueue = finishedWork.updateQueue;
+  const lastEffect = updateQueue !== null ? updateQueue.lastEffect : null;
+  if (lastEffect !== null) {
+    const firstEffect = lastEffect.next;
+    let effect = firstEffect;
+    do {
+      if ((effect.tag & flags) === flags) {
+        const create = effect.create;
+        const inst = effect.inst;
+        const destroy = create();
+        inst.destroy = destroy;
+      }
+      effect = effect.next;
+    } while (lastEffect !== effect);
+  }
+}
+
 // 根据fiber删除dom节点，父dom，子dom
 function commitDeletions(deletions: Fiber[] | null, parentDom: Element) {
   if (deletions === null) {
@@ -75,17 +112,6 @@ function commitDeletions(deletions: Fiber[] | null, parentDom: Element) {
     const childToDelete = deletions[i];
     const domNode = getStateNode(childToDelete);
     parentDom.removeChild(domNode);
-  }
-}
-
-// 根据一个fiber获取其对应的dom节点
-function getStateNode(fiber: Fiber) {
-  let node = fiber;
-  while (1) {
-    if (isHost(node) && node.stateNode) {
-      return node.stateNode;
-    }
-    node = node.child as Fiber;
   }
 }
 
@@ -120,6 +146,46 @@ function commitPlacement(finishedWork: Fiber) {
       commitPlacement(kid);
       kid = kid.sibling;
     }
+  }
+}
+
+export function flushPassiveEffects(finishedWork: Fiber) {
+  // !1 遍历字节点，检查子节点passive
+  recursivelyTraversePassiveEffects(finishedWork);
+  // !2 如果有passive effect，执行passive effect
+  commitPassiveEffects(finishedWork);
+}
+
+function recursivelyTraversePassiveEffects(finishedWork: Fiber) {
+  let child = finishedWork.child;
+  while (child !== null) {
+    // !1 遍历字节点，检查子节点passive
+    recursivelyTraversePassiveEffects(child);
+    // !2 如果有passive effect，执行passive effect
+    commitPassiveEffects(child);
+    child = child.sibling;
+  }
+}
+
+function commitPassiveEffects(finishedWork: Fiber) {
+  switch (finishedWork.tag) {
+    case FunctionComponent:
+      if (finishedWork.flags & Passive) {
+        commitHookEffectListMount(HookPassive, finishedWork);
+        finishedWork.flags &= ~Passive;
+      }
+      break;
+  }
+}
+
+// 根据一个fiber获取其对应的dom节点
+function getStateNode(fiber: Fiber) {
+  let node = fiber;
+  while (1) {
+    if (isHost(node) && node.stateNode) {
+      return node.stateNode;
+    }
+    node = node.child as Fiber;
   }
 }
 
@@ -191,14 +257,14 @@ function commitHostTextUpdate(
   newText: string,
   oldText: string
 ) {
-    const textInstance = finishedWork.stateNode;
-    commitTextUpdate(textInstance, oldText, newText);
+  const textInstance = finishedWork.stateNode;
+  commitTextUpdate(textInstance, oldText, newText);
 }
 
 export function commitTextUpdate(
-    textInstance: Text,
-    oldText: string,
-    newText: string,
-  ): void {
-    textInstance.nodeValue = newText;
-  }
+  textInstance: Text,
+  oldText: string,
+  newText: string
+): void {
+  textInstance.nodeValue = newText;
+}

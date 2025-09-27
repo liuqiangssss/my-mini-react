@@ -4,7 +4,8 @@ import { ensureRootIsScheduled } from "./ReactFiberRootScheduler";
 import type { Fiber, FiberRoot } from "./ReactInternalTypes";
 import { beginWork } from "./ReactFiberBeginWork";
 import { completeWork } from "./ReactFiberCompleteWork";
-import { commitMutationEffects } from "./ReactFiberCommitWork";
+import { commitMutationEffects, flushPassiveEffects } from "./ReactFiberCommitWork";
+import { Scheduler } from "scheduler";
 
 type ExecutionContext = number;
 
@@ -52,6 +53,10 @@ function commitRoot(root: FiberRoot) {
 
   // !2. mutation 阶段，渲染don树
   commitMutationEffects(root, root.finishedWork as Fiber);
+  // !2.1  passive effect 阶段 执行 passive effect
+  Scheduler.scheduleCallback(Scheduler.NormalPriority, () => {
+    flushPassiveEffects(root.finishedWork as Fiber);
+  });
 
   // !3. commit 阶段结束 恢复全局变量
   executionContext = prevExecutionContext;
@@ -82,7 +87,8 @@ function prepareFreshStack(root: FiberRoot): Fiber {
   workInProgressRoot = root;
   const rootWorkInProgress = createWorkInProgress(root.current, null);
 
-  if (workInProgress === null) { // 函数组件workInProgress可能是什么某个fiber开始
+  if (workInProgress === null) {
+    // 函数组件workInProgress可能是什么某个fiber开始
     workInProgress = rootWorkInProgress; // fiber
   }
   return rootWorkInProgress;
@@ -102,7 +108,7 @@ function performUnitOfWork(unitOfWork: Fiber) {
   const next = beginWork(current, unitOfWork);
   // ! 把pendingProps更新到memoizedProps
   unitOfWork.memoizedProps = unitOfWork.pendingProps;
-  
+
   if (next === null) {
     // If this doesn't spawn new work, complete the current work.
     // 如果不再产生新的work，那么当前work结束
