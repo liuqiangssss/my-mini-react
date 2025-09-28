@@ -90,11 +90,19 @@ function updateHostComponent(current: Fiber | null, workInProgress: Fiber) {
 
 function updateClassComponent(current: Fiber | null, workInProgress: Fiber) {
   const { type, pendingProps } = workInProgress;
+
+  // 获取context
+  const context = type.contextType;
+  const newValue = readContext(context);
+
   let instance = workInProgress.stateNode;
   if (current === null) {
     instance = new type(pendingProps);
     workInProgress.stateNode = instance;
   }
+
+  instance.context = newValue;
+
   const nextChildren = instance.render();
   reconcileChildren(current, workInProgress, nextChildren);
   return workInProgress.child;
@@ -122,26 +130,25 @@ function updateContextProvider(current: Fiber | null, workInProgress: Fiber) {
 
   const context = type._context;
   const value = pendingProps.value;
-  pushProvider(context, value); 
+  pushProvider(context, value);
 
   const nextChildren = pendingProps.children;
   reconcileChildren(current, workInProgress, nextChildren);
   return workInProgress.child;
 }
 
-
 function updateContextConsumer(current: Fiber | null, workInProgress: Fiber) {
-    const { type, pendingProps } = workInProgress;
-    const context = type._context;
+  const { type, pendingProps } = workInProgress;
+  const context = type._context;
 
-    const newValue = readContext(context);
+  const newValue = readContext(context);
 
-    // consumer 的 children 是函数
-    const render = pendingProps.children;
-    const nextChildren = render(newValue);
+  // consumer 的 children 是函数
+  const render = pendingProps.children;
+  const nextChildren = render(newValue);
 
-    reconcileChildren(current, workInProgress, nextChildren);
-    return workInProgress.child;
+  reconcileChildren(current, workInProgress, nextChildren);
+  return workInProgress.child;
 }
 
 // 协调子节点, 构建新的fiber树

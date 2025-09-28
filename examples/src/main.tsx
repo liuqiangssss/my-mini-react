@@ -83,6 +83,7 @@ function App2() {
         {count2}
       </button>
       <CountContext.Provider value={count}>
+        <ClassComponent />
         <CountContext.Provider value={count + 20}>
           <Child />
         </CountContext.Provider>
@@ -97,6 +98,15 @@ function App2() {
       {count % 2 === 0 && <h1>123</h1>} */}
     </div>
   );
+}
+class ClassComponent extends Component {
+  static contextType = CountContext;
+  // constructor(props: any, context: any) {
+  //   super(props, context);
+  // }
+  render() {
+    return <div>ClassComponent: {this.context}</div>;
+  }
 }
 
 function Child() {
