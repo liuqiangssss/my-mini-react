@@ -5,6 +5,7 @@ import { HostRoot } from "./ReactWorkTags";
 import { Passive, Update, type Flags } from "./ReactFiberFlags";
 import { type HookFlags, HookLayout, HookPassive } from "./ReactHookEffectTags";
 import { readContext } from "./ReactFiberNewContext";
+import type { ReactContext } from "shared/ReactTypes";
 
 type Dispatch<A> = (action: A) => void;
 
@@ -230,7 +231,7 @@ export function useRef<T>(initialValue: T) {
   return hook.memoizedState;
 }
 
-export function useContext(context) {
+export function useContext<T>(context: ReactContext<T>): T {
   return readContext(context);
 }
 

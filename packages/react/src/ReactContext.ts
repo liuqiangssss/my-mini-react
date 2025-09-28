@@ -1,5 +1,9 @@
 import type { ReactContext } from "shared/ReactTypes";
-import { REACT_CONTEXT_TYPE, REACT_PROVIDER_TYPE } from "shared/ReactSymbols";
+import {
+  REACT_CONSUMER_TYPE,
+  REACT_CONTEXT_TYPE,
+  REACT_PROVIDER_TYPE,
+} from "shared/ReactSymbols";
 
 export function createContext<T>(defaultValue: T): ReactContext<T> {
   const context: ReactContext<T> = {
@@ -10,14 +14,14 @@ export function createContext<T>(defaultValue: T): ReactContext<T> {
     Consumer: null as any,
   };
 
-    context.Provider = {
-        $$typeof: REACT_PROVIDER_TYPE,
-        _context: context,
-    };
-  //   context.Consumer = {
-  //     $$typeof: REACT_CONSUMER_TYPE,
-  //     _context: context,
-  //   };
+  context.Provider = {
+    $$typeof: REACT_PROVIDER_TYPE,
+    _context: context,
+  };
+  context.Consumer = context.Consumer = {
+    $$typeof: REACT_CONSUMER_TYPE,
+    _context: context,
+  };
 
   return context;
 }

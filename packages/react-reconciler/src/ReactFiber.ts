@@ -3,6 +3,7 @@ import { NoFlags } from "./ReactFiberFlags";
 import { type Lanes, NoLanes } from "./ReactFiberLane";
 import {
   ClassComponent,
+  ContextConsumer,
   ContextProvider,
   Fragment,
   FunctionComponent,
@@ -11,7 +12,7 @@ import {
   IndeterminateComponent,
   type WorkTag,
 } from "./ReactWorkTags";
-import { REACT_FRAGMENT_TYPE, REACT_PROVIDER_TYPE } from "shared/ReactSymbols";
+import { REACT_CONSUMER_TYPE, REACT_FRAGMENT_TYPE, REACT_PROVIDER_TYPE } from "shared/ReactSymbols";
 import type { Fiber } from "./ReactInternalTypes";
 import type { ReactElement } from "shared/ReactTypes";
 
@@ -77,6 +78,8 @@ export function createFiberFromTypeAndProps(
     fiberTag = Fragment;
   } else if (type.$$typeof === REACT_PROVIDER_TYPE) {
     fiberTag = ContextProvider;
+  } else if (type.$$typeof === REACT_CONSUMER_TYPE) {
+    fiberTag = ContextConsumer;
   }
  
   const fiber = createFiber(fiberTag, pendingProps, key);

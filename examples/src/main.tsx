@@ -102,7 +102,12 @@ function App2() {
 function Child() {
   //! 后代组件消费value， 寻找最近的匹配的provider组件的value
   const context = useContext(CountContext);
-  return <div>Child: {context}</div>;
+  return <div>
+    <div>Child: {context}</div>
+    <CountContext.Consumer>
+      {value => <div>Child: {value}</div>}
+    </CountContext.Consumer>
+  </div>;
 }
 
 createRoot(document.getElementById("root")!).render(<App2 />);

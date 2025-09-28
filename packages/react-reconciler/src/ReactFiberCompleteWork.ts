@@ -2,6 +2,7 @@ import { Update } from "./ReactFiberFlags";
 import type { Fiber } from "./ReactInternalTypes";
 import {
   ClassComponent,
+  ContextConsumer,
   ContextProvider,
   Fragment,
   FunctionComponent,
@@ -20,6 +21,7 @@ export function completeWork(current: Fiber | null, workInProgress: Fiber) {
     case HostRoot:
     case ClassComponent:
     case Fragment:
+    case ContextConsumer:
     case FunctionComponent:
       return null;
     case ContextProvider:

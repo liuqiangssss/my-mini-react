@@ -1,6 +1,7 @@
 import type { Fiber } from "./ReactInternalTypes";
 import {
   ClassComponent,
+  ContextConsumer,
   ContextProvider,
   Fragment,
   FunctionComponent,
@@ -11,7 +12,7 @@ import {
 import { reconcileChildFibers, mountChildFibers } from "./ReactChildFiber";
 import { isNum, isStr } from "shared/utils";
 import { renderWithHooks } from "./ReactFiberHooks";
-import { pushProvider } from "./ReactFiberNewContext";
+import { pushProvider, readContext } from "./ReactFiberNewContext";
 // 1 处理当前fiber， 应为不同组件对应的fiber 的处理方式不同
 // 2 返回子节点
 export function beginWork(
@@ -33,6 +34,8 @@ export function beginWork(
       return updateFunctionComponent(current, workInProgress);
     case ContextProvider:
       return updateContextProvider(current, workInProgress);
+    case ContextConsumer:
+      return updateContextConsumer(current, workInProgress);
     // case ContextConsumer:
     //   return updateContextConsumer(current, workInProgress);
   }
@@ -124,6 +127,21 @@ function updateContextProvider(current: Fiber | null, workInProgress: Fiber) {
   const nextChildren = pendingProps.children;
   reconcileChildren(current, workInProgress, nextChildren);
   return workInProgress.child;
+}
+
+
+function updateContextConsumer(current: Fiber | null, workInProgress: Fiber) {
+    const { type, pendingProps } = workInProgress;
+    const context = type._context;
+
+    const newValue = readContext(context);
+
+    // consumer 的 children 是函数
+    const render = pendingProps.children;
+    const nextChildren = render(newValue);
+
+    reconcileChildren(current, workInProgress, nextChildren);
+    return workInProgress.child;
 }
 
 // 协调子节点, 构建新的fiber树

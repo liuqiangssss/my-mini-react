@@ -31,7 +31,7 @@ export type Source = {
     _currentValue: T;
   
     Provider: ReactProviderType<T>;
-    Consumer: ReactContext<T>;
+    Consumer: ReactConsumerType<T>;
   };
   
   export type ReactProviderType<T> = {
@@ -39,3 +39,7 @@ export type Source = {
     _context: ReactContext<T>;
   };
   
+  export type ReactConsumerType<T> = {
+  $$typeof: symbol | number,
+  _context: ReactContext<T>,
+};
